@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>iframe tester</title>
+    <link rel="stylesheet" href="https://public.codepenassets.com/css/reset-2.0.min.css">
+
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Firza Radio Medan Player</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{
+    font-family:'Segoe UI',sans-serif;
+    display:flex;justify-content:center;align-items:center;
+    height:100vh;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    transition:background 1s ease;
+    overflow:hidden;
+  }
+  .player{
+    text-align:center;
+    padding:40px;
+    border-radius:25px;
+    background:rgba(255,255,255,0.1);
+    backdrop-filter:blur(20px);
+    box-shadow:0 0 40px rgba(0,0,0,0.4);
+    width:90%;max-width:400px;
+  }
+  .cover-wrap{
+    position:relative;
+    width:220px;height:220px;
+    margin:auto 0 25px;
+  }
+  .ring{
+    position:absolute;
+    top:50%;left:50%;
+    width:250px;height:250px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:conic-gradient(#ff006e,#8338ec,#3a86ff,#06c,#ff006e);
+    animation:spin 3s linear infinite,pulse 2s ease-in-out infinite;
+    filter:blur(2px);opacity:.8;
+  }
+  @keyframes spin{
+    from{transform:translate(-50%,-50%) rotate(0deg)}
+    to{transform:translate(-50%,-50%) rotate(360deg)}
+  }
+  @keyframes pulse{
+    0%,100%{opacity:.8;transform:translate(-50%,-50%) scale(1)}
+    50%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}
+  }
+  .cover{
+    position:absolute;top:50%;left:50%;
+    width:220px;height:220px;
+    transform:translate(-50%,-50%);
+    border-radius:50%;object-fit:cover;
+    box-shadow:0 0 25px rgba(0,0,0,0.5);
+    animation:rotate 10s linear infinite;
+  }
+  @keyframes rotate{
+    from{transform:translate(-50%,-50%) rotate(0deg)}
+    to{transform:translate(-50%,-50%) rotate(360deg)}
+  }
+  .paused{animation-play-state:paused}
+  h2{color:#fff;margin-bottom:5px}
+  h4{color:#ddd;margin-bottom:10px}
+  .radio-name{color:#bbb;margin-bottom:20px}
+  
+  /* 🎛️ Tombol segaris */
+  .controls{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:20px;
+    margin:15px 0;
+  }
+  button{
+    background:rgba(255,255,255,0.2);
+    color:white;
+    border:none;
+    border-radius:50%;
+    width:60px;height:60px;
+    cursor:pointer;
+    font-size:22px;
+    transition:.3s;
+    box-shadow:0 0 10px rgba(255,255,255,0.2);
+  }
+  button:hover{
+    background:rgba(255,255,255,0.3);
+    transform:scale(1.1);
+    box-shadow:0 0 20px rgba(255,255,255,0.5);
+  }
+
+  .listeners{color:#fff;margin-top:10px;font-size:14px;opacity:.8}
+</style>
+</head>
+<body>
+<div class="player">
+  <div class="cover-wrap">
+    <div class="ring"></div>
+    <img id="cover" class="cover" src="http://cdn.theradiohub.com/logos/157.jpg">
+  </div>
+  <h2 id="title">Firza Radio Medan</h2>
+  <h4 id="artist">Streaming Live</h4>
+  <div class="radio-name">LIVE • Firza Radio Medan</div>
+
+  <!-- ✅ Tombol sejajar -->
+  <div class="controls">
+    <button id="refresh" title="Refresh">🔄</button>
+    <button id="play" title="Play / Pause">▶</button>
+    <button id="stop" title="Stop">⏹</button>
+  </div>
+
+  <div class="listeners" id="listeners">Menunggu data...</div>
+</div>
+
+<audio id="audio" crossorigin="anonymous"></audio>
+
+<script>
+const idzeno="49c2uvzd4reuv";
+const stream="https://stream.zeno.fm/"+idzeno;
+const fallbackCover="http://cdn.theradiohub.com/logos/157.jpg";
+const audio=document.getElementById("audio");
+const playBtn=document.getElementById("play");
+const stopBtn=document.getElementById("stop");
+const refreshBtn=document.getElementById("refresh");
+const cover=document.getElementById("cover");
+const titleEl=document.getElementById("title");
+const artistEl=document.getElementById("artist");
+const listeners=document.getElementById("listeners");
+let isPlaying=false;
+
+audio.src=stream;
+audio.volume=0.7;
+
+playBtn.onclick=()=>{
+  if(isPlaying){audio.pause();cover.classList.add("paused");playBtn.textContent="▶";}
+  else{audio.play();cover.classList.remove("paused");playBtn.textContent="⏸";}
+  isPlaying=!isPlaying;
+};
+stopBtn.onclick=()=>{
+  audio.pause();audio.currentTime=0;isPlaying=false;cover.classList.add("paused");playBtn.textContent="▶";
+};
+refreshBtn.onclick=()=>fetchNowPlaying();
+
+async function fetchNowPlaying(){
+  listeners.textContent="🔄 Memuat...";
+  try{
+    const r=await fetch(`https://zenoplay.zenomedia.com/api/zenofm/nowplaying/${idzeno}/?rand=${Math.random()}`);
+    const data=await r.json();
+    updateInfo(data);
+  }catch(e){
+    console.error(e);
+    listeners.textContent="Gagal memuat data";
+  }
+}
+
+async function updateInfo(data){
+  let title=data.title||"Firza Radio Medan";
+  let artist=data.artist||"Streaming Live";
+  if(title.includes(" - ")){let p=title.split(" - ");artist=p[0].trim();title=p[1].trim();}
+  titleEl.textContent=title;
+  artistEl.textContent=artist;
+
+  let img=data.thumb;
+  if(!img||img===""){
+    try{
+      const res=await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artist+" "+title)}&limit=1`);
+      const j=await res.json();
+      if(j.results&&j.results.length>0){
+        img=j.results[0].artworkUrl100.replace("100x100","600x600");
+      }
+    }catch{}
+  }
+
+  cover.src=img&&img!=""?img:fallbackCover;
+  listeners.textContent="🎵 Live dari Medan";
+  changeBackgroundColor(title+artist);
+}
+
+// 🌈 Background otomatis berganti tiap 15 detik
+const colors=[
+  'linear-gradient(135deg,#667eea,#764ba2)',
+  'linear-gradient(135deg,#f093fb,#f5576c)',
+  'linear-gradient(135deg,#4facfe,#00f2fe)',
+  'linear-gradient(135deg,#fa709a,#fee140)',
+  'linear-gradient(135deg,#30cfd0,#330867)'
+];
+let colorIndex=0;
+function cycleBackground(){
+  colorIndex=(colorIndex+1)%colors.length;
+  document.body.style.background=colors[colorIndex];
+}
+setInterval(cycleBackground,15000);
+
+function changeBackgroundColor(seed){
+  const idx=Math.abs(seed.split('').reduce((a,c)=>a+c.charCodeAt(0),0))%colors.length;
+  document.body.style.background=colors[idx];
+}
+
+fetchNowPlaying();
+setInterval(fetchNowPlaying,30000);
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
